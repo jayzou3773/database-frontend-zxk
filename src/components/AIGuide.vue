@@ -614,8 +614,9 @@ export default {
   letter-spacing: 1vw;
 }
 
+
 .container {
-  background: url("../assets/bg5.jpg") no-repeat center;
+  /* background: url("../assets/boxing.png") no-repeat center; */
   background-size: 100% 100%;
 }
 
