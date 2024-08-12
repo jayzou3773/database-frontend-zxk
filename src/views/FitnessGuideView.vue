@@ -1,0 +1,25 @@
+<template>
+    <NavigationBar />
+    <div class="spacer"></div> <!-- 添加一个间隔元素 -->
+    <AIGuide />
+</template>
+
+<script>
+
+import { defineComponent } from "vue";
+import { RouterView } from 'vue-router';
+import NavigationBar from "../components/NavigationBar.vue";
+import FitnessGuide from "../components/FitnessGuide.vue";
+import AIGuide from "../components/AIGuide.vue"
+
+export default defineComponent({
+    components: { NavigationBar, FitnessGuide, AIGuide }
+})
+</script>
+
+<style scoped>
+.spacer {
+    margin-top: 20px;
+    /* 根据需要调整间距 */
+}
+</style>
