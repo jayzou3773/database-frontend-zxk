@@ -1,7 +1,7 @@
 <script setup>
 import Navigator from '../components/NavigationBar.vue'
-import { ref, h } from 'vue'
-import { onMounted } from 'vue'
+import { ref, h, onBeforeMount } from 'vue'
+import { onMounted, } from 'vue'
 import axios from 'axios'
 import { ElNotification, ElMessageBox, ElMessage } from 'element-plus'
 import NotificationContent from '../components/NotificationContent.vue'
@@ -37,23 +37,26 @@ const fakeData = [
 ]
 const equipmentList = ref(fakeData) // 默认情况下先使用fakeData
 
+
 const fetchAllEquipmentGuide = async () => {
     try {
-        equipmentList.value = fakeData
-        const response = await axios.get('/api/AIGuide/GetRandomEquipmentGuide')
-        equipmentList.value = response.data.guides(item => ({
+        const response = await axios.get('/api/AIGuide/GetALLEquipmentGuide')
+        equipmentList.value = response.data.guides.map(item => ({
             equipmentName: item.equipmentName,
             imgUrl: item.imgUrl, // 确保图片URL是完整的URL
             shortIntr: item.briefIntr // 使用 briefIntr 作为简介
         }))
     } catch (error) {
-        equipmentList.value = fakeData
+        equipmentList = fakeData
         console.error('Failed to fetch equipment guide:', error)
+        console.log("result", equipmentList)
+
     }
 }
 
-onMounted(() => {
+onBeforeMount(() => {
     fetchAllEquipmentGuide()
+    console.log("result", equipmentList)
 })
 
 const handleInsertOrUpdate = async () => {
@@ -245,6 +248,27 @@ function openInNewTab(url) {
     <Navigator />
     <el-backtop :right="50" :bottom="50" />
 
+    <div class="management-container">
+        <el-form :model="form" ref="formRef" label-width="120px">
+            <el-form-item label="器材名称">
+                <el-input v-model="form.equipmentName" placeholder="请输入器材名称"></el-input>
+            </el-form-item>
+            <el-form-item label="图片URL">
+                <el-input v-model="form.imgUrl" placeholder="请输入图片URL"></el-input>
+            </el-form-item>
+            <el-form-item label="操作指南">
+                <el-input v-model="form.operationGuide" type="textarea" placeholder="请输入操作指南"></el-input>
+            </el-form-item>
+            <el-form-item label="简介">
+                <el-input v-model="form.briefIntr" type="textarea" placeholder="请输入简介"></el-input>
+            </el-form-item>
+            <el-form-item>
+                <el-button type="primary" @click="handleInsertOrUpdate">插入/更新</el-button>
+                <el-button type="danger" @click="handleDelete">删除</el-button>
+            </el-form-item>
+        </el-form>
+    </div>
+
     <div class="carousel-container-top">
         <el-carousel indicator-position="outside">
             <el-carousel-item v-for="(item, index) in items" :key="index">
@@ -255,82 +279,98 @@ function openInNewTab(url) {
     <div v-if="showMask" class="mask"></div>
     <div class="card_1">
         <el-card class="custom-card" style="max-width: 1000px; flex: 65;" shadow="hover" @click="showNotification">
-            <img src="../assets/strength.png" class="hover-zoom"
+            <img :src="equipmentList[0].imgUrl" class="hover-zoom"
                 style="width: 100%; height: 300px; object-fit: cover;" />
             <div class="footer-content" style="background-color: #ffffff; text-align: left;">
                 <br>
-                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px;">跑步机</p><br>
+                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px;">{{
+        equipmentList[0].equipmentName }}</p><br>
                 <p style="font-size: 16px; margin-left: 25px; margin-right: 25px;">
-                    跑步机
+                    {{
+        equipmentList[0].shortIntr }}
                 </p><br><br><br>
             </div>
         </el-card>
         <el-card class="custom-card" style="max-width: 1000px; flex: 35;" shadow="hover" @click="showNotification2">
-            <img src="../assets/running.png" class="hover-zoom"
+            <img :src="equipmentList[1].imgUrl" class="hover-zoom"
                 style="width: 100%; height: 200px; object-fit: cover;" />
             <div class="footer-content" style="background-color: #33aee3; text-align: left;">
                 <br>
-                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px; color: white;">单杠</p><br>
+                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px; color: white;">{{
+        equipmentList[1].equipmentName }}</p><br>
                 <p style="font-size: 16px; margin-left: 25px; margin-right: 25px; color: white;">
-                    单杠
+                    {{
+        equipmentList[1].shortIntr }}
                 </p><br><br><br><br><br><br>
             </div>
         </el-card>
     </div>
     <div class="card_2">
         <el-card class="custom-card" style="max-width: 1000px; flex: 32;" shadow="hover" @click="showNotification3">
-            <img src="../assets/cycling.png" class="hover-zoom"
+            <img :src="equipmentList[2].imgUrl" class="hover-zoom"
                 style="width: 100%; height: 250px; object-fit: cover;" />
             <div class="footer-content" style="background-color: #3453dd; text-align: left;">
                 <br>
-                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px; color: white;">动感单车</p><br>
+                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px; color: white;">{{
+        equipmentList[2].equipmentName }}</p><br>
                 <p style="font-size: 16px; margin-left: 25px; margin-right: 25px; color: white;">
-                    动感单车
+                    {{
+        equipmentList[2].shortIntr }}
                 </p><br><br><br><br><br><br><br>
             </div>
         </el-card>
         <el-card class="custom-card" style="max-width: 1000px; flex: 32;" shadow="hover" @click="showNotification4">
-            <img src="../assets/swimming.png" class="hover-zoom"
+            <img :src="equipmentList[3].imgUrl" class="hover-zoom"
                 style="width: 100%; height: 250px; object-fit: cover;" />
             <div class="footer-content" style="background-color: #ffffff; text-align: left;">
                 <br>
-                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px;">瑜伽垫</p><br>
+                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px;">{{
+        equipmentList[3].equipmentName }}</p><br>
                 <p style="font-size: 16px; margin-left: 25px; margin-right: 25px;">
-                    瑜伽垫
+                    {{
+        equipmentList[3].shortIntr }}
                 </p><br><br><br><br><br><br><br>
             </div>
         </el-card>
         <el-card class="custom-card" style="max-width: 1000px; flex: 35;" shadow="hover" @click="showNotification5">
-            <img src="../assets/boxing.png" class="hover-zoom" style="width: 100%; height: 250px; object-fit: cover;" />
+            <img :src="equipmentList[4].imgUrl" class="hover-zoom"
+                style="width: 100%; height: 250px; object-fit: cover;" />
             <div class="footer-content" style="background-color: #ededed; text-align: left;">
                 <br>
-                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px; color: rgb(0, 0, 0);">哑铃</p>
+                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px; color: rgb(0, 0, 0);">{{
+        equipmentList[4].equipmentName }}</p>
                 <br>
                 <p style="font-size: 16px; margin-left: 25px; margin-right: 25px; color: rgb(0, 0, 0);">
-                    哑铃
+                    {{
+        equipmentList[4].shortIntr }}
                 </p><br><br><br><br><br><br><br>
             </div>
         </el-card>
     </div>
     <div class="card_3">
         <el-card class="custom-card" style="max-width: 1000px; flex: 65;" shadow="hover" @click="showNotification6">
-            <img src="../assets/yoga.png" class="hover-zoom" style="width: 100%; height: 300px; object-fit: cover;" />
+            <img :src="equipmentList[5].imgUrl" class="hover-zoom"
+                style="width: 100%; height: 300px; object-fit: cover;" />
             <div class="footer-content" style="background-color: #ffffff; text-align: left;">
                 <br>
-                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px;">绳索拉力器</p><br>
+                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px;">{{
+        equipmentList[5].equipmentName }}</p><br>
                 <p style="font-size: 16px; margin-left: 25px; margin-right: 25px;">
-                    绳索拉力器
+                    {{
+        equipmentList[5].shortIntr }}
                 </p><br><br><br>
             </div>
         </el-card>
         <el-card class="custom-card" style="max-width: 1000px; flex: 35;" shadow="hover" @click="showNotification7">
-            <img src="../assets/climbing.png" class="hover-zoom"
+            <img :src="equipmentList[6].imgUrl" class="hover-zoom"
                 style="width: 100%; height: 250px; object-fit: cover;" />
             <div class="footer-content" style="background-color: #3453dd; text-align: left;">
                 <br>
-                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px; color: white;">椭圆机</p><br>
+                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px; color: white;">{{
+                    equipmentList[6].equipmentName }}</p><br>
                 <p style="font-size: 16px; margin-left: 25px; margin-right: 25px; color: white;">
-                    椭圆机
+                    {{
+                    equipmentList[6].shortIntr }}
                 </p><br><br><br><br><br><br>
             </div>
         </el-card>
