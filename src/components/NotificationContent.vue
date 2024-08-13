@@ -25,11 +25,11 @@
           </div>
           <div class="right-body" :class="messages.length === 0 ? 'nodata' : ''" ref="messageContainer">
             <div v-for="(message, index) in messages" class="main-message" :key="index"
-              :class="{ 'user-message': message.sender === 'user', 'friend-message': message.sender === 'coach' }">
+              :class="{ 'user-message': message.sender === 'user', 'friend-message': message.sender === 'assistant' }">
               <div class="message-sender"
-                :class="{ 'user-message': message.sender === 'user', 'friend-message': message.sender === 'coach' }">
+                :class="{ 'user-message': message.sender === 'user', 'friend-message': message.sender === 'assistant' }">
                 <img v-if="message.sender === 'user'" src="../assets/我的.png" alt="User Icon">
-                <img v-else-if="message.sender === 'coach'" src="../assets/我的2.png" alt="Coach Icon">
+                <img v-else-if="message.sender === 'assistant'" src="../assets/我的2.png" alt="Coach Icon">
                 <span class="message-sender-name" :class="message.sender === 'user' ? 'user-color' : 'friend-color'">{{
         message.sender }}:</span>
               </div>
@@ -119,53 +119,54 @@ const handleSearch = async () => {
   const keyword = queryKeyword.value;
   loading.value = true;
   try {
-    let zxakey = "zxa";
-    let sseMessage = {
-      orgcontent: '',
-      content: '',
-      sender: 'coach',
-      zxakey: zxakey
-    };
+    // 构建要发送的消息数组
+    const messageArray = messages.value.map((message) => {
+      return {
+        role: message.sender === 'user' ? 'user' : 'assistant',
+        content: message.content
+      };
+    });
 
+    // 将当前用户输入添加到消息数组
+    messageArray.push({
+      role: 'user',
+      content: keyword
+    });
+
+    // 发送请求到API
+    const response = await axios.post('/api/AIGuide/LLM', {
+      equipmentName: props.equipmentName,
+      messages: messageArray
+    });
+
+    // 处理返回的assistant_output
+    const assistantResponse = response.data.assistant_output;
+
+    // 将用户的输入和AI助手的回复加入消息列表
     messages.value.push({
       content: keyword,
       sender: 'user'
     });
 
+    messages.value.push({
+      content: assistantResponse,
+      sender: 'assistant'
+    });
+
+    // 重置输入框
+    queryKeyword.value = '';
+    loading.value = false;
+
     nextTick(() => {
       scrollToBottom();
     });
 
-    let friendMessage = sseMessage;
-    eventSource.value = new EventSource('http://127.0.0.1:5000/llm/request?query=' + keyword);
-
-    eventSource.value.onmessage = (event) => {
-      try {
-        const dataObject = JSON.parse(event.data);
-        if (dataObject.message === 'done') {
-          eventSource.value.close();
-          loading.value = false;
-        }
-        if (dataObject.message != 'done') {
-          friendMessage.orgcontent += dataObject.message.toLocaleString();
-          friendMessage.orgcontent = friendMessage.orgcontent.replace(/\*\*\s*([^*]*?)\s*(:\s*)?\*\*/g, '**$1$2**');
-          friendMessage.content = md.render(friendMessage.orgcontent);
-        }
-        scrollToBottom();
-      } catch (e) {
-        console.error('Error parsing JSON:', e);
-      }
-    };
-    messages.value.push(sseMessage);
-    queryKeyword.value = '';
-    eventSource.value.onerror = error => {
-      console.error('EventSource failed:', error);
-      eventSource.value.close();
-    };
   } catch (error) {
     console.error('发送消息时出错：', error);
+    loading.value = false;
   }
 };
+
 
 const closeEventSource = () => {
   loading.value = false;
