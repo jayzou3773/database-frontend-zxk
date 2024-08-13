@@ -3,7 +3,7 @@ import Navigator from '../components/NavigationBar.vue'
 import { ref, h } from 'vue'
 import { onMounted } from 'vue'
 import axios from 'axios'
-import { ElNotification } from 'element-plus'
+import { ElNotification, ElMessageBox, ElMessage } from 'element-plus'
 import NotificationContent from '../components/NotificationContent.vue'
 import NotificationContent2 from '../components/NotificationContent2.vue'
 import NotificationContent3 from '../components/NotificationContent3.vue'
@@ -18,30 +18,88 @@ const items = ref([
     { src: new URL('../assets/top3.png', import.meta.url).href, alt: 'Image 3' }
 ])
 
-const imageSrc = ref('')
-const guide = ref(null)
+// 表单数据和管理操作
+const form = ref({
+    equipmentName: '',
+    imgUrl: '',
+    operationGuide: '',
+    briefIntr: ''
+})
+// 伪造的假数据
+const fakeData = [
+    { equipmentName: '跑步机', imgUrl: '../assets/strength.png', shortIntr: '提高心肺耐力的最佳选择' },
+    { equipmentName: '单杠', imgUrl: '../assets/running.png', shortIntr: '锻炼上肢力量的经典器械' },
+    { equipmentName: '动感单车', imgUrl: '../assets/cycling.png', shortIntr: '高效的有氧运动工具' },
+    { equipmentName: '瑜伽垫', imgUrl: '../assets/swimming.png', shortIntr: '舒适的柔韧性训练基础' },
+    { equipmentName: '哑铃', imgUrl: '../assets/boxing.png', shortIntr: '力量训练的万能选择' },
+    { equipmentName: '绳索拉力器', imgUrl: '../assets/yoga.png', shortIntr: '灵活的全身肌肉训练工具' },
+    { equipmentName: '椭圆机', imgUrl: '../assets/climbing.png', shortIntr: '低冲击力的有氧运动神器' }
+]
+const equipmentList = ref(fakeData) // 默认情况下先使用fakeData
 
-const fetchGuide = async () => {
+const fetchAllEquipmentGuide = async () => {
     try {
-        const response = await axios.get('/api/AIGuide/GetEquipmentGuide', {
-            params: { equipmentName: '跑步机' } // 在此处替换为你需要查询的器械名称
-        })
-        guide.value = response.data.guide
-        imageSrc.value = guide.value.imgUrl // 设置图片链接
+        const response = await axios.get('/api/AIGuide/GetALLEquipmentGuide')
+        equipmentList.value = response.data.guides.map(item => ({
+            equipmentName: item.equipmentName,
+            imgUrl: item.imgUrl, // 确保图片URL是完整的URL
+            shortIntr: item.briefIntr // 使用 briefIntr 作为简介
+        }))
     } catch (error) {
-        console.error('Failed to fetch guide:', error)
+        equipmentList.value = fakeData
+        console.error('Failed to fetch equipment guide:', error)
     }
 }
 
 onMounted(() => {
-    fetchGuide()
+    fetchAllEquipmentGuide()
 })
 
-const showMask = ref(false)
-
-const toggleMask = () => {
-    showMask.value = !showMask.value
+const handleInsertOrUpdate = async () => {
+    if (form.value.equipmentName === '') {
+        ElMessage.warning('器材名称不能为空')
+        return
+    }
+    try {
+        const response = await axios.put('/api/AIGuide/UpdateEquipmentGuide', form.value)
+        ElMessage.success(response.data.message)
+        fetchAllEquipmentGuide() // 更新后重新获取列表
+    } catch (error) {
+        try {
+            const response = await axios.post('/api/AIGuide/InsertEquipmentGuide', form.value)
+            ElMessage.success(response.data.message)
+            fetchAllEquipmentGuide() // 插入后重新获取列表
+        } catch (error) {
+            console.error('操作失败:', error)
+            ElMessage.error('操作失败')
+        }
+    }
 }
+
+const handleDelete = async () => {
+    if (form.value.equipmentName === '') {
+        ElMessage.warning('器材名称不能为空')
+        return
+    }
+    ElMessageBox.confirm(`确认删除 ${form.value.equipmentName} 吗？`, '删除确认', {
+        confirmButtonText: '删除',
+        cancelButtonText: '取消',
+        type: 'warning',
+    }).then(async () => {
+        try {
+            const response = await axios.post('/api/AIGuide/DeleteEquipmentGuide', { equipmentName: form.value.equipmentName })
+            ElMessage.success(response.data.message)
+            fetchAllEquipmentGuide() // 删除后重新获取列表
+        } catch (error) {
+            console.error('删除失败:', error)
+            ElMessage.error('删除失败')
+        }
+    }).catch(() => {
+        ElMessage.info('已取消删除')
+    })
+}
+
+const showMask = ref(false)
 
 const showNotification = () => {
     showMask.value = true; // 显示遮罩层
@@ -49,8 +107,8 @@ const showNotification = () => {
 
     // 使用 Vue 组件作为通知内容
     ElNotification({
-        title: '跑步机',
-        message: h(NotificationContent),
+        title: equipmentList.value[0].equipmentName,
+        message: h(NotificationContent, { equipmentName: equipmentList.value[0].equipmentName }), // 传递 equipmentName
         duration: 0,
         position: 'top-left',
         customClass: 'custom-notification',
@@ -68,8 +126,8 @@ const showNotification2 = () => {
 
     // 使用 Vue 组件作为通知内容
     ElNotification({
-        title: '单杠',
-        message: h(NotificationContent2),
+        title: equipmentList.value[1].equipmentName,
+        message: h(NotificationContent2, { equipmentName: equipmentList.value[1].equipmentName }), // 传递 equipmentName
         duration: 0,
         position: 'top-right',
         customClass: 'custom-notification',
@@ -87,8 +145,8 @@ const showNotification3 = () => {
 
     // 使用 Vue 组件作为通知内容
     ElNotification({
-        title: '🚴‍♂️ 骑行的乐趣',
-        message: h(NotificationContent3),
+        title: equipmentList.value[2].equipmentName,
+        message: h(NotificationContent3, { equipmentName: equipmentList.value[2].equipmentName }), // 传递 equipmentName
         duration: 0,
         position: 'top-left',
         customClass: 'custom-notification',
@@ -106,8 +164,8 @@ const showNotification4 = () => {
 
     // 使用 Vue 组件作为通知内容
     ElNotification({
-        title: '🏊‍♂️ 游泳的自由',
-        message: h(NotificationContent4),
+        title: equipmentList.value[3].equipmentName,
+        message: h(NotificationContent4, { equipmentName: equipmentList.value[3].equipmentName }), // 传递 equipmentName
         duration: 0,
         position: 'top-left',
         customClass: 'custom-notification',
@@ -125,8 +183,8 @@ const showNotification5 = () => {
 
     // 使用 Vue 组件作为通知内容
     ElNotification({
-        title: '🥊 拳击的力量与速度',
-        message: h(NotificationContent5),
+        title: equipmentList.value[4].equipmentName,
+        message: h(NotificationContent5, { equipmentName: equipmentList.value[4].equipmentName }), // 传递 equipmentName
         duration: 0,
         position: 'top-right',
         customClass: 'custom-notification',
@@ -144,8 +202,8 @@ const showNotification6 = () => {
 
     // 使用 Vue 组件作为通知内容
     ElNotification({
-        title: '🧘‍♀️ 瑜伽的宁静',
-        message: h(NotificationContent6),
+        title: equipmentList.value[5].equipmentName,
+        message: h(NotificationContent6, { equipmentName: equipmentList.value[5].equipmentName }), // 传递 equipmentName
         duration: 0,
         position: 'top-left',
         customClass: 'custom-notification',
@@ -163,8 +221,8 @@ const showNotification7 = () => {
 
     // 使用 Vue 组件作为通知内容
     ElNotification({
-        title: '🧗‍♀️ 攀岩挑战',
-        message: h(NotificationContent7),
+        title: equipmentList.value[6].equipmentName,
+        message: h(NotificationContent7, { equipmentName: equipmentList.value[6].equipmentName }), // 传递 equipmentName
         duration: 0,
         position: 'top-right',
         customClass: 'custom-notification',
@@ -185,6 +243,28 @@ function openInNewTab(url) {
 <template>
     <Navigator />
     <el-backtop :right="50" :bottom="50" />
+
+    <div class="management-container">
+        <el-form :model="form" ref="formRef" label-width="120px">
+            <el-form-item label="器材名称">
+                <el-input v-model="form.equipmentName" placeholder="请输入器材名称"></el-input>
+            </el-form-item>
+            <el-form-item label="图片URL">
+                <el-input v-model="form.imgUrl" placeholder="请输入图片URL"></el-input>
+            </el-form-item>
+            <el-form-item label="操作指南">
+                <el-input v-model="form.operationGuide" type="textarea" placeholder="请输入操作指南"></el-input>
+            </el-form-item>
+            <el-form-item label="简介">
+                <el-input v-model="form.briefIntr" type="textarea" placeholder="请输入简介"></el-input>
+            </el-form-item>
+            <el-form-item>
+                <el-button type="primary" @click="handleInsertOrUpdate">插入/更新</el-button>
+                <el-button type="danger" @click="handleDelete">删除</el-button>
+            </el-form-item>
+        </el-form>
+    </div>
+
     <div class="carousel-container-top">
         <el-carousel indicator-position="outside">
             <el-carousel-item v-for="(item, index) in items" :key="index">
@@ -195,104 +275,95 @@ function openInNewTab(url) {
     <div v-if="showMask" class="mask"></div>
     <div class="card_1">
         <el-card class="custom-card" style="max-width: 1000px; flex: 65;" shadow="hover" @click="showNotification">
-            <img src="../assets/strength.png" class="hover-zoom"
+            <img :src="equipmentList.value[0].imgUrl" class="hover-zoom"
                 style="width: 100%; height: 300px; object-fit: cover;" />
             <div class="footer-content" style="background-color: #ffffff; text-align: left;">
                 <br>
-                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px;">跑步机</p><br>
+                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px;">{{
+        equipmentList.value[0].equipmentName }}</p><br>
                 <p style="font-size: 16px; margin-left: 25px; margin-right: 25px;">
-                    跑步机
+                    {{ equipmentList.value[0].shortIntr }}
                 </p><br><br><br>
             </div>
         </el-card>
         <el-card class="custom-card" style="max-width: 1000px; flex: 35;" shadow="hover" @click="showNotification2">
-            <img src="../assets/running.png" class="hover-zoom"
+            <img :src="equipmentList.value[1].imgUrl" class="hover-zoom"
                 style="width: 100%; height: 200px; object-fit: cover;" />
             <div class="footer-content" style="background-color: #33aee3; text-align: left;">
                 <br>
-                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px; color: white;">单杠</p><br>
+                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px; color: white;">{{
+        equipmentList.value[1].equipmentName }}</p><br>
                 <p style="font-size: 16px; margin-left: 25px; margin-right: 25px; color: white;">
-                    单杠
+                    {{ equipmentList.value[1].shortIntr }}
                 </p><br><br><br><br><br><br>
             </div>
         </el-card>
     </div>
     <div class="card_2">
         <el-card class="custom-card" style="max-width: 1000px; flex: 32;" shadow="hover" @click="showNotification3">
-            <img src="../assets/cycling.png" class="hover-zoom"
+            <img :src="equipmentList.value[2].imgUrl" class="hover-zoom"
                 style="width: 100%; height: 250px; object-fit: cover;" />
             <div class="footer-content" style="background-color: #3453dd; text-align: left;">
                 <br>
-                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px; color: white;">动感单车</p><br>
+                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px; color: white;">{{
+        equipmentList.value[2].equipmentName }}</p><br>
                 <p style="font-size: 16px; margin-left: 25px; margin-right: 25px; color: white;">
-                    动感单车
+                    {{ equipmentList.value[2].shortIntr }}
                 </p><br><br><br><br><br><br><br>
             </div>
         </el-card>
         <el-card class="custom-card" style="max-width: 1000px; flex: 32;" shadow="hover" @click="showNotification4">
-            <img src="../assets/swimming.png" class="hover-zoom"
+            <img :src="equipmentList.value[3].imgUrl" class="hover-zoom"
                 style="width: 100%; height: 250px; object-fit: cover;" />
             <div class="footer-content" style="background-color: #ffffff; text-align: left;">
                 <br>
-                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px;">瑜伽垫</p><br>
+                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px;">{{
+        equipmentList.value[3].equipmentName }}</p><br>
                 <p style="font-size: 16px; margin-left: 25px; margin-right: 25px;">
-                    瑜伽垫
+                    {{ equipmentList.value[3].shortIntr }}
                 </p><br><br><br><br><br><br><br>
             </div>
         </el-card>
         <el-card class="custom-card" style="max-width: 1000px; flex: 35;" shadow="hover" @click="showNotification5">
-            <img src="../assets/boxing.png" class="hover-zoom" style="width: 100%; height: 250px; object-fit: cover;" />
+            <img :src="equipmentList.value[4].imgUrl" class="hover-zoom"
+                style="width: 100%; height: 250px; object-fit: cover;" />
             <div class="footer-content" style="background-color: #ededed; text-align: left;">
                 <br>
-                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px; color: rgb(0, 0, 0);">哑铃</p>
+                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px; color: rgb(0, 0, 0);">{{
+        equipmentList.value[4].equipmentName }}</p>
                 <br>
                 <p style="font-size: 16px; margin-left: 25px; margin-right: 25px; color: rgb(0, 0, 0);">
-                    哑铃
+                    {{ equipmentList.value[4].shortIntr }}
                 </p><br><br><br><br><br><br><br>
             </div>
         </el-card>
     </div>
     <div class="card_3">
         <el-card class="custom-card" style="max-width: 1000px; flex: 65;" shadow="hover" @click="showNotification6">
-            <img src="../assets/yoga.png" class="hover-zoom" style="width: 100%; height: 300px; object-fit: cover;" />
+            <img :src="equipmentList.value[5].imgUrl" class="hover-zoom"
+                style="width: 100%; height: 300px; object-fit: cover;" />
             <div class="footer-content" style="background-color: #ffffff; text-align: left;">
                 <br>
-                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px;">绳索拉力器</p><br>
+                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px;">{{
+        equipmentList.value[5].equipmentName }}</p><br>
                 <p style="font-size: 16px; margin-left: 25px; margin-right: 25px;">
-                    绳索拉力器
+                    {{ equipmentList.value[5].shortIntr }}
                 </p><br><br><br>
             </div>
         </el-card>
         <el-card class="custom-card" style="max-width: 1000px; flex: 35;" shadow="hover" @click="showNotification7">
-            <img src="../assets/climbing.png" class="hover-zoom"
+            <img :src="equipmentList.value[6].imgUrl" class="hover-zoom"
                 style="width: 100%; height: 250px; object-fit: cover;" />
             <div class="footer-content" style="background-color: #3453dd; text-align: left;">
                 <br>
-                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px; color: white;">椭圆机</p><br>
+                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px; color: white;">{{
+                    equipmentList.value[6].equipmentName }}</p><br>
                 <p style="font-size: 16px; margin-left: 25px; margin-right: 25px; color: white;">
-                    椭圆机
+                    {{ equipmentList.value[6].shortIntr }}
                 </p><br><br><br><br><br><br>
             </div>
         </el-card>
     </div>
-    <!-- <div class="background-container">
-        <p style="color: white; font-size: 24px;">关注我们</p><br>
-        <div class="image-wrapper">
-            <div class="image-container" @click="openInNewTab('https://www.tongji.edu.cn/')">
-                <img src="../assets/university.png" alt="公司简介" class="normal-image" style="background-color: #ffffff;">
-                <img src="../assets/university.png" alt="公司简介" class="hover-image" style="background-color: #ffffff;">
-                <div class="text-overlay">加入我们</div>
-            </div>
-            <div class="image-container" @click="openInNewTab('https://sse.tongji.edu.cn/')">
-                <img src="../assets/logo2.png" alt="公司简介2" class="normal-image">
-                <img src="../assets/logo2.png" alt="公司简介2" class="hover-image">
-                <div class="text-overlay">联系我们</div>
-            </div>
-        </div>
-        <br>
-        <p style="color: white; font-size: 20px;">FitFit&nbsp;&nbsp;·&nbsp;&nbsp;FitFit&nbsp;&nbsp;·&nbsp;&nbsp;FitFit
-        </p>
-    </div> -->
 </template>
 
 <style>
@@ -457,6 +528,14 @@ function openInNewTab(url) {
 .blur-active .card_2,
 .blur-active .card_3 {
     pointer-events: none;
+}
+
+.management-container {
+    padding: 20px;
+    background-color: #f5f5f5;
+    margin-bottom: 20px;
+    margin-top: 120px;
+    width: 80%;
 }
 
 .background-container {

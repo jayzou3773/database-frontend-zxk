@@ -61,6 +61,14 @@ import markdownItContainer from 'markdown-it-container';
 import hljs from 'highlight.js';
 import markdownItHighlightjs from 'markdown-it-highlightjs';
 
+// 使用 defineProps 接收 props
+const props = defineProps({
+  equipmentName: {
+    type: String,
+    required: true
+  }
+})
+
 const imageSrc = ref('')
 const guide = ref(null)
 const conversationStarted = ref(false)  // 跟踪对话是否已启动
@@ -80,7 +88,7 @@ const md = new MarkdownIt()
 const fetchGuide = async () => {
   try {
     const response = await axios.get('/api/AIGuide/GetEquipmentGuide', {
-      params: { equipmentName: '跑步机' }
+      params: { equipmentName: props.equipmentName } // 使用从 props 接收的 equipmentName
     })
     guide.value = response.data.guide
     imageSrc.value = guide.value.imgUrl
