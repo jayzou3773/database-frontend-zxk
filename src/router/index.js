@@ -9,7 +9,8 @@ import CameraView from "../views/CameraView.vue";
 import DataView from "../views/DataView.vue";
 import EquipmentGuide from "../views/EquipmentGuideView.vue";
 import EquipmentDetails from '../components/EquipmentDetails.vue';
-
+import adminEquipment from "../components/adminEquipment.vue"
+import AddDiet from "../components/AddDiet.vue"
 import FitnessGuide from "../views/FitnessGuideView.vue"
 import FitnessDetail from "../components/FitnessDetail.vue"
 
@@ -86,12 +87,6 @@ const router = createRouter({
       name: 'FitnessGuide',
       component: FitnessGuide,
       meta: { requiresAuth: false },
-      props: route => ({
-        exerciseName: route.params.exerciseName,
-        url: route.params.url,
-        aisuggestion: route.params.aisuggestion,
-        gifUrl: route.params.gifUrl
-      })
     },
     {
       path: '/detail',

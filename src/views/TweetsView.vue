@@ -27,7 +27,7 @@ const form = ref({
 })
 // 伪造的假数据
 const fakeData = [
-    { equipmentName: '跑步机', imgUrl: '../assets/strength.png', shortIntr: '提高心肺耐力的最佳选择' },
+    { equipmentName: '1', imgUrl: '../assets/strength.png', shortIntr: '提高心肺耐力的最佳选择' },
     { equipmentName: '单杠', imgUrl: '../assets/running.png', shortIntr: '锻炼上肢力量的经典器械' },
     { equipmentName: '动感单车', imgUrl: '../assets/cycling.png', shortIntr: '高效的有氧运动工具' },
     { equipmentName: '瑜伽垫', imgUrl: '../assets/swimming.png', shortIntr: '舒适的柔韧性训练基础' },
@@ -39,8 +39,9 @@ const equipmentList = ref(fakeData) // 默认情况下先使用fakeData
 
 const fetchAllEquipmentGuide = async () => {
     try {
-        const response = await axios.get('/api/AIGuide/GetALLEquipmentGuide')
-        equipmentList.value = response.data.guides.map(item => ({
+        equipmentList.value = fakeData
+        const response = await axios.get('/api/AIGuide/GetRandomEquipmentGuide')
+        equipmentList.value = response.data.guides(item => ({
             equipmentName: item.equipmentName,
             imgUrl: item.imgUrl, // 确保图片URL是完整的URL
             shortIntr: item.briefIntr // 使用 briefIntr 作为简介
@@ -244,27 +245,6 @@ function openInNewTab(url) {
     <Navigator />
     <el-backtop :right="50" :bottom="50" />
 
-    <div class="management-container">
-        <el-form :model="form" ref="formRef" label-width="120px">
-            <el-form-item label="器材名称">
-                <el-input v-model="form.equipmentName" placeholder="请输入器材名称"></el-input>
-            </el-form-item>
-            <el-form-item label="图片URL">
-                <el-input v-model="form.imgUrl" placeholder="请输入图片URL"></el-input>
-            </el-form-item>
-            <el-form-item label="操作指南">
-                <el-input v-model="form.operationGuide" type="textarea" placeholder="请输入操作指南"></el-input>
-            </el-form-item>
-            <el-form-item label="简介">
-                <el-input v-model="form.briefIntr" type="textarea" placeholder="请输入简介"></el-input>
-            </el-form-item>
-            <el-form-item>
-                <el-button type="primary" @click="handleInsertOrUpdate">插入/更新</el-button>
-                <el-button type="danger" @click="handleDelete">删除</el-button>
-            </el-form-item>
-        </el-form>
-    </div>
-
     <div class="carousel-container-top">
         <el-carousel indicator-position="outside">
             <el-carousel-item v-for="(item, index) in items" :key="index">
@@ -275,91 +255,82 @@ function openInNewTab(url) {
     <div v-if="showMask" class="mask"></div>
     <div class="card_1">
         <el-card class="custom-card" style="max-width: 1000px; flex: 65;" shadow="hover" @click="showNotification">
-            <img :src="equipmentList.value[0].imgUrl" class="hover-zoom"
+            <img src="../assets/strength.png" class="hover-zoom"
                 style="width: 100%; height: 300px; object-fit: cover;" />
             <div class="footer-content" style="background-color: #ffffff; text-align: left;">
                 <br>
-                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px;">{{
-        equipmentList.value[0].equipmentName }}</p><br>
+                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px;">跑步机</p><br>
                 <p style="font-size: 16px; margin-left: 25px; margin-right: 25px;">
-                    {{ equipmentList.value[0].shortIntr }}
+                    跑步机
                 </p><br><br><br>
             </div>
         </el-card>
         <el-card class="custom-card" style="max-width: 1000px; flex: 35;" shadow="hover" @click="showNotification2">
-            <img :src="equipmentList.value[1].imgUrl" class="hover-zoom"
+            <img src="../assets/running.png" class="hover-zoom"
                 style="width: 100%; height: 200px; object-fit: cover;" />
             <div class="footer-content" style="background-color: #33aee3; text-align: left;">
                 <br>
-                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px; color: white;">{{
-        equipmentList.value[1].equipmentName }}</p><br>
+                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px; color: white;">单杠</p><br>
                 <p style="font-size: 16px; margin-left: 25px; margin-right: 25px; color: white;">
-                    {{ equipmentList.value[1].shortIntr }}
+                    单杠
                 </p><br><br><br><br><br><br>
             </div>
         </el-card>
     </div>
     <div class="card_2">
         <el-card class="custom-card" style="max-width: 1000px; flex: 32;" shadow="hover" @click="showNotification3">
-            <img :src="equipmentList.value[2].imgUrl" class="hover-zoom"
+            <img src="../assets/cycling.png" class="hover-zoom"
                 style="width: 100%; height: 250px; object-fit: cover;" />
             <div class="footer-content" style="background-color: #3453dd; text-align: left;">
                 <br>
-                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px; color: white;">{{
-        equipmentList.value[2].equipmentName }}</p><br>
+                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px; color: white;">动感单车</p><br>
                 <p style="font-size: 16px; margin-left: 25px; margin-right: 25px; color: white;">
-                    {{ equipmentList.value[2].shortIntr }}
+                    动感单车
                 </p><br><br><br><br><br><br><br>
             </div>
         </el-card>
         <el-card class="custom-card" style="max-width: 1000px; flex: 32;" shadow="hover" @click="showNotification4">
-            <img :src="equipmentList.value[3].imgUrl" class="hover-zoom"
+            <img src="../assets/swimming.png" class="hover-zoom"
                 style="width: 100%; height: 250px; object-fit: cover;" />
             <div class="footer-content" style="background-color: #ffffff; text-align: left;">
                 <br>
-                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px;">{{
-        equipmentList.value[3].equipmentName }}</p><br>
+                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px;">瑜伽垫</p><br>
                 <p style="font-size: 16px; margin-left: 25px; margin-right: 25px;">
-                    {{ equipmentList.value[3].shortIntr }}
+                    瑜伽垫
                 </p><br><br><br><br><br><br><br>
             </div>
         </el-card>
         <el-card class="custom-card" style="max-width: 1000px; flex: 35;" shadow="hover" @click="showNotification5">
-            <img :src="equipmentList.value[4].imgUrl" class="hover-zoom"
-                style="width: 100%; height: 250px; object-fit: cover;" />
+            <img src="../assets/boxing.png" class="hover-zoom" style="width: 100%; height: 250px; object-fit: cover;" />
             <div class="footer-content" style="background-color: #ededed; text-align: left;">
                 <br>
-                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px; color: rgb(0, 0, 0);">{{
-        equipmentList.value[4].equipmentName }}</p>
+                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px; color: rgb(0, 0, 0);">哑铃</p>
                 <br>
                 <p style="font-size: 16px; margin-left: 25px; margin-right: 25px; color: rgb(0, 0, 0);">
-                    {{ equipmentList.value[4].shortIntr }}
+                    哑铃
                 </p><br><br><br><br><br><br><br>
             </div>
         </el-card>
     </div>
     <div class="card_3">
         <el-card class="custom-card" style="max-width: 1000px; flex: 65;" shadow="hover" @click="showNotification6">
-            <img :src="equipmentList.value[5].imgUrl" class="hover-zoom"
-                style="width: 100%; height: 300px; object-fit: cover;" />
+            <img src="../assets/yoga.png" class="hover-zoom" style="width: 100%; height: 300px; object-fit: cover;" />
             <div class="footer-content" style="background-color: #ffffff; text-align: left;">
                 <br>
-                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px;">{{
-        equipmentList.value[5].equipmentName }}</p><br>
+                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px;">绳索拉力器</p><br>
                 <p style="font-size: 16px; margin-left: 25px; margin-right: 25px;">
-                    {{ equipmentList.value[5].shortIntr }}
+                    绳索拉力器
                 </p><br><br><br>
             </div>
         </el-card>
         <el-card class="custom-card" style="max-width: 1000px; flex: 35;" shadow="hover" @click="showNotification7">
-            <img :src="equipmentList.value[6].imgUrl" class="hover-zoom"
+            <img src="../assets/climbing.png" class="hover-zoom"
                 style="width: 100%; height: 250px; object-fit: cover;" />
             <div class="footer-content" style="background-color: #3453dd; text-align: left;">
                 <br>
-                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px; color: white;">{{
-                    equipmentList.value[6].equipmentName }}</p><br>
+                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px; color: white;">椭圆机</p><br>
                 <p style="font-size: 16px; margin-left: 25px; margin-right: 25px; color: white;">
-                    {{ equipmentList.value[6].shortIntr }}
+                    椭圆机
                 </p><br><br><br><br><br><br>
             </div>
         </el-card>
