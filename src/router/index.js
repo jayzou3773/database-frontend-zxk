@@ -85,7 +85,7 @@ const router = createRouter({
     {
       path: '/fit',
       name: 'FitnessGuide',
-      component: FitnessGuide,
+      component: adminEquipment,
       meta: { requiresAuth: false },
     },
     {
