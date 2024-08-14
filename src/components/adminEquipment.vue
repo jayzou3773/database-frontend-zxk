@@ -123,8 +123,9 @@
 </template>
 
 <script>
-// import equipmentBG2 from '@/assets/equipmentBG2.jpg';
+import equipmentBG2 from '../assets/strength.png';
 import axios from 'axios';
+import {ElNotification} from "element-plus";
 
 export default {
     name: 'equipmentGuide',
@@ -269,9 +270,9 @@ export default {
                 briefIntr: this.newEquipment.briefIntr,
                 operationGuide: this.newEquipment.operationGuide
             }
+
             axios.post('http://localhost:5273/api/AIGuide/InsertEquipmentGuide', requestData)
                 .then(response => {
-                    this.newEquipment.equipmentName = response.data.equipmentName;
                     this.newEquipment.lastUpdateTime = new Date(response.data.lastUpdateTime);
                     ElNotification({
                         message: response.data.message,
@@ -297,8 +298,10 @@ export default {
                 })
         },
         deleteEquipmentFromDB(equipmentName) {
-            axios.post('http://localhost:5273/api/AIGuide/DeleteEquipmentGuide', {
-                equipmentName: equipmentName
+            axios.delete('http://localhost:5273/api/AIGuide/DeleteEquipmentGuide', {
+                params:{
+                  equipmentName:equipmentName
+                }
             })
                 .then(response => {
                     ElNotification({
