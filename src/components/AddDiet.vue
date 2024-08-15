@@ -146,7 +146,7 @@ export default {
             showDietContext: false,
             currentPage: 1,
             pageSize: 3,
-            foodBG2
+            // foodBG2
         }
     },
     computed: {

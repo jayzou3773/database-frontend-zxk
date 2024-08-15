@@ -41,7 +41,7 @@ const equipmentList = ref(fakeData) // 默认情况下先使用fakeData
 const fetchAllEquipmentGuide = async () => {
     try {
         const response = await axios.get('/api/AIGuide/GetALLEquipmentGuide')
-        equipmentList.value = response.data.guides.map(item => ({
+        equipmentList = response.data.guides.map(item => ({
             equipmentName: item.equipmentName,
             imgUrl: item.imgUrl, // 确保图片URL是完整的URL
             shortIntr: item.briefIntr // 使用 briefIntr 作为简介

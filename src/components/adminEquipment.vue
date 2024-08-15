@@ -123,7 +123,7 @@
 </template>
 
 <script>
-// import equipmentBG2 from '@/assets/equipmentBG2.jpg';
+import equipmentBG2 from '../assets/strength.png';
 import axios from 'axios';
 
 export default {
