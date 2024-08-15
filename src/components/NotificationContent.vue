@@ -3,14 +3,14 @@
     <p>
       <img :src="imageSrc" alt="Example Image" class="notification-image" />
     </p>
-    <p v-if="guide" style="text-indent: 2em;">
-      {{ guide.instructions }}
+    <p v-if="guide" style="text-indent: 2em; font-size:20px ">
+      {{ guide }}
     </p>
     <p v-else style="text-align: center;">
       正在加载器械操作指南...
     </p>
     <!-- 修改按钮，用于开启或关闭对话 -->
-    <el-button type="primary" @click="toggleConversation">
+    <el-button type="primary" @click="toggleConversation" style="font-size:20px">
       {{ conversationStarted ? '关闭对话' : '开启对话' }}
     </el-button>
 
@@ -20,7 +20,7 @@
         <div class="home-right">
           <div class="right-version">
             <div class="llm-chat-demo">
-              <span class="chat-demo">AI健身教练</span>
+              <span class="chat-demo" style="font-size:20px">AI健身教练</span>
             </div>
           </div>
           <div class="right-body" :class="messages.length === 0 ? 'nodata' : ''" ref="messageContainer">
@@ -33,16 +33,16 @@
                 <span class="message-sender-name" :class="message.sender === 'user' ? 'user-color' : 'friend-color'">{{
         message.sender }}:</span>
               </div>
-              <div v-if="message.sender === 'user'" class="user-message">{{ message.content }}</div>
-              <div v-else class="friend-message" v-html="message.content"></div>
+              <div v-if="message.sender === 'user'" class="user-message" v-html="message.content" ></div>
+              <div v-else class="friend-message" v-html="md.render(message.content)"></div>
             </div>
           </div>
           <div class="right-input" @keyup.enter="handleSearch">
-            <el-input v-model="queryKeyword" placeholder="给AI健身助手发送消息" class="input"></el-input>
-            <el-button v-if="!loading" type="primary" @click="handleSearch">发送</el-button>
-            <el-button v-if="loading" type="primary" @click="closeEventSource">停止</el-button>
+            <el-input v-model="queryKeyword" placeholder="给AI健身助手发送消息" class="input" style="font-size:20px"></el-input>
+            <el-button v-if="!loading" type="primary" style="font-size:20px" @click="handleSearch">发送</el-button>
+            <el-button v-if="loading" type="primary" style="font-size:20px" @click="closeEventSource">停止</el-button>
           </div>
-          <div class="sec-notice">AI健身教练可能会说错话哟，回答仅供参考，详细内容请斟酌
+          <div class="sec-notice" style="font-size:15px">AI健身教练可能会说错话哟，回答仅供参考，详细内容请斟酌
           </div>
         </div>
       </div>
@@ -78,20 +78,29 @@ const loading = ref(false);
 const eventSource = ref(null);
 const messageContainer = ref(null);
 
-const md = new MarkdownIt()
-  .use(markdownItFootnote)
-  .use(markdownItTaskLists, { enabled: true })
-  .use(markdownItAbbr)
-  .use(markdownItContainer, 'warning')
-  .use(markdownItHighlightjs, { hljs });
+// const md = new MarkdownIt()
+//   .use(markdownItFootnote)
+//   .use(markdownItTaskLists, { enabled: true })
+//   .use(markdownItAbbr)
+//   .use(markdownItContainer, 'warning')
+//   .use(markdownItHighlightjs, { hljs });
+
+const md = new MarkdownIt({
+    breaks: false,   // 禁用自动将换行符转换为 <br>
+    html: true,      // 允许内嵌 HTML
+    linkify: true,   // 自动识别 URL 并转换为链接
+    typographer: true // 启用替换“智能”引号等功能
+});
+
 
 const fetchGuide = async () => {
   try {
-    const response = await axios.get('/api/AIGuide/GetEquipmentGuide', {
+    const response = await axios.get('http://localhost:5273/api/AIGuide/GetEquipmentGuide', {
       params: { equipmentName: props.equipmentName } // 使用从 props 接收的 equipmentName
+
     })
-    guide.value = response.data.guide
-    imageSrc.value = guide.value.imgUrl
+    guide.value = response.data.operationGuide
+    imageSrc.value = response.data.imgUrl
   } catch (error) {
     console.error('Failed to fetch guide:', error)
   }
@@ -111,61 +120,90 @@ const toggleConversation = () => {
   }
 };
 
-const handleSearch = async () => {
-  if (loading.value) {
-    return;
-  }
 
-  const keyword = queryKeyword.value;
-  loading.value = true;
-  try {
+
+const handleSearch = () => {
+    if (loading.value) {
+        return;
+    }
+
+    loading.value = true;
+    const keyword = queryKeyword.value;
+
+    // 将用户的输入加入消息列表
+    messages.value.push({
+        content: md.render(keyword),
+        sender: 'user'
+    });
+
+    queryKeyword.value = '';
+
     // 构建要发送的消息数组
     const messageArray = messages.value.map((message) => {
-      return {
-        role: message.sender === 'user' ? 'user' : 'assistant',
-        content: message.content
-      };
+        return {
+            role: message.sender === 'user' ? 'user' : 'assistant',
+            content: message.content
+        };
     });
 
-    // 将当前用户输入添加到消息数组
-    messageArray.push({
-      role: 'user',
-      content: keyword
-    });
+    // 使用EventSource处理流式输出
+    const encodedMessages = encodeURIComponent(JSON.stringify(messageArray));
+    const eventSource = new EventSource(`http://localhost:5273/api/AIGuide/LLM?equipmentName=${props.equipmentName}&messages=${encodedMessages}`);
 
-    // 发送请求到API
-    const response = await axios.post('/api/AIGuide/LLM', {
-      equipmentName: props.equipmentName,
-      messages: messageArray
-    });
+    let assistantMessage = {
+        content: '',
+        sender: 'assistant'
+    };
 
-    // 处理返回的assistant_output
-    const assistantResponse = response.data.assistant_output;
+    let assistantRawMessage = {
+        content: '',
+        sender: 'assistant'
+    };
 
-    // 将用户的输入和AI助手的回复加入消息列表
-    messages.value.push({
-      content: keyword,
-      sender: 'user'
-    });
+    messages.value.push(assistantMessage); // 先添加一条空的消息
 
-    messages.value.push({
-      content: assistantResponse,
-      sender: 'assistant'
-    });
+    eventSource.onmessage = function (event) {
+    if (event.data === '[DONE]') {
+        eventSource.close();
+        loading.value = false;
+        return;
+    }
 
-    // 重置输入框
-    queryKeyword.value = '';
-    loading.value = false;
+    if (event.data) {
+        console.log("Received chunk:", event.data);
 
-    nextTick(() => {
-      scrollToBottom();
-    });
+        //event.data = event.data.replaceAll("xx", "\n");
+        var tmp = event.data.toString();
+        tmp = tmp.replaceAll("xx ", "\n")
+        assistantRawMessage.content+=tmp;
+        // 更新消息内容
+        assistantMessage.content = assistantRawMessage.content;
 
-  } catch (error) {
-    console.error('发送消息时出错：', error);
-    loading.value = false;
-  }
+        // 强制刷新消息列表
+        messages.value = [...messages.value];
+
+        nextTick(() => {
+            scrollToBottom(); // 确保滚动到底部
+        });
+    }
 };
+
+    eventSource.onerror = function (event) {
+        console.error('EventSource failed:', event);
+        eventSource.close();
+        loading.value = false;
+    };
+};
+
+
+
+
+function scrollToBottom() {
+  const container = document.querySelector('.right-body');
+  container.scrollTop = container.scrollHeight;
+}
+
+
 
 
 const closeEventSource = () => {
@@ -175,11 +213,7 @@ const closeEventSource = () => {
   }
 };
 
-const scrollToBottom = () => {
-  if (messageContainer.value) {
-    messageContainer.value.scrollTop = messageContainer.value.scrollHeight;
-  }
-};
+
 
 onBeforeUnmount(() => {
   if (eventSource.value) {
@@ -191,6 +225,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .notification-content {
+  max-height: 1500px ;
   text-align: left;
   padding: 20px;
   width: 800px;
@@ -247,6 +282,7 @@ onBeforeUnmount(() => {
 
 .chat-demo {
   opacity: 0.65;
+  font-size:20px
 }
 
 .right-body {
@@ -259,7 +295,7 @@ onBeforeUnmount(() => {
 }
 
 .friend-color {
-  color: #77FC5D;
+  color: #14a003;
 }
 
 .nodata {
@@ -270,9 +306,11 @@ onBeforeUnmount(() => {
 }
 
 .main-message {
-  margin: auto;
+  max-height: 500px;
   width: 80%;
   justify-content: center;
+  margin-bottom: 100px;
+  margin-left: 20px;
 }
 
 .message-sender-name {
@@ -330,6 +368,8 @@ onBeforeUnmount(() => {
   text-align: left;
   padding: 5px;
   margin-bottom: 5px;
+  white-space: normal; /* 确保文本不会强制换行 */
+  word-wrap: break-word; /* 确保长单词在必要时才换行 */
 }
 
 ::v-deep .friend-message pre .hljs {
@@ -352,5 +392,16 @@ onBeforeUnmount(() => {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+.active {
+  background-color: #FF0000; /* 开启时红色背景 */
+  color: white; /* 白色文字 */
+}
+
+/* 默认状态样式 */
+.el-button {
+  background-color: #4CAF50; /* 默认绿色背景 */
+  color: white; /* 白色文字 */
 }
 </style>

@@ -13,6 +13,7 @@ import adminEquipment from "../components/adminEquipment.vue"
 import AddDiet from "../components/AddDiet.vue"
 import FitnessGuide from "../views/FitnessGuideView.vue"
 import FitnessDetail from "../components/FitnessDetail.vue"
+import AdminEquipmentView from '../views/AdminEquipmentView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -61,9 +62,9 @@ const router = createRouter({
     },
     //相机页面
     {
-      path: '/camera',
-      name: 'CameraView',
-      component: CameraView,
+      path: '/admin',
+      name: 'AdminView',
+      component: AdminEquipmentView,
       meta: { requiresAuth: false }
     },
     //数据页面
@@ -85,7 +86,7 @@ const router = createRouter({
     {
       path: '/fit',
       name: 'FitnessGuide',
-      component: adminEquipment,
+      component: FitnessGuide,
       meta: { requiresAuth: false },
     },
     {

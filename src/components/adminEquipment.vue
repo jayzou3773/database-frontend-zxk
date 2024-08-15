@@ -90,7 +90,7 @@
                 <h2>修改器材信息</h2>
                 <br>
                 <el-input v-model="currentEquipment.equipmentName" size="large" style="width: 200px" autosize
-                    type="textarea" placeholder="请输入器材名称" />
+                    type="textarea" placeholder="请输入器材名称" disabled />
                 <div style="margin: 15px 0" />
                 <el-upload class="avatar-uploader" :show-file-list="false" :before-upload="beforeAvatarUpload">
                     <img v-if="currentEquipment.imgUrl" :src="currentEquipment.imgUrl" class="avatar" />
@@ -125,6 +125,7 @@
 <script>
 import equipmentBG2 from '../assets/strength.png';
 import axios from 'axios';
+import { ElNotification } from "element-plus";
 
 export default {
     name: 'equipmentGuide',
@@ -196,6 +197,16 @@ export default {
             this.dialogVisible = true;
         },
         saveNewEquipment() {
+            // 检查是否有同名器材
+            const duplicate = this.allEquipment.some(item => item.equipmentName === this.newEquipment.equipmentName);
+            if (duplicate) {
+                ElNotification({
+                    message: '器材名称已存在，请输入不同的名称。',
+                    type: 'error',
+                    duration: 2000
+                });
+                return; // 阻止插入
+            }
             if (this.newEquipment.equipmentName && this.newEquipment.imgUrl && this.newEquipment.briefIntr && this.newEquipment.operationGuide) {
                 this.allEquipment.push({ ...this.newEquipment });
                 this.sendEquipmentToDB();
@@ -269,9 +280,9 @@ export default {
                 briefIntr: this.newEquipment.briefIntr,
                 operationGuide: this.newEquipment.operationGuide
             }
+
             axios.post('http://localhost:5273/api/AIGuide/InsertEquipmentGuide', requestData)
                 .then(response => {
-                    this.newEquipment.equipmentName = response.data.equipmentName;
                     this.newEquipment.lastUpdateTime = new Date(response.data.lastUpdateTime);
                     ElNotification({
                         message: response.data.message,
@@ -297,8 +308,10 @@ export default {
                 })
         },
         deleteEquipmentFromDB(equipmentName) {
-            axios.post('http://localhost:5273/api/AIGuide/DeleteEquipmentGuide', {
-                equipmentName: equipmentName
+            axios.delete('http://localhost:5273/api/AIGuide/DeleteEquipmentGuide', {
+                params: {
+                    equipmentName: equipmentName
+                }
             })
                 .then(response => {
                     ElNotification({

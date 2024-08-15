@@ -1,6 +1,6 @@
 <template>
+  <NavigationBar />
   <div class="container">
-    <Menu></Menu>
     <div class="title">
       <span>健身动作指导</span>
     </div>
@@ -17,7 +17,7 @@
               <el-upload action="#" drag class="uploader" list-type="picture" :auto-upload="false"
                 :show-file-list="false" :on-change="imgPreview">
                 <div class="uploader-icon">
-                  <i class="el-icon-upload2"></i>
+                  <el-icon icon="el-icon-upload"><upload/></el-icon>
                 </div>
                 <div class="uploader-text">请将图像拖到此处或点击上传</div>
               </el-upload>
@@ -27,11 +27,11 @@
               <span class="actions">
                 <!-- 放大 -->
                 <span class="item">
-                  <i class="el-icon-zoom-in" @click="beforeImgDialogVisible = true"></i>
+                  <el-icon class="el-icon-zoom-in" @click="beforeImgDialogVisible = true"><ZoomIn/></el-icon>
                 </span>
                 <!-- 删除 -->
                 <span class="item">
-                  <i class="el-icon-delete" @click="del"></i>
+                  <el-icon class="el-icon-delete" @click="del"><Delete/></el-icon>
                 </span>
               </span>
             </div>
@@ -39,15 +39,15 @@
           <div class="content-right">
             <el-card v-if="active === 1" shadow="always" class="card">
               <div slot="header" class="clearfix">
-                <span><b>上传健身截图</b></span>
+                 <span class="upload-title">上传健身截图</span>
               </div>
               <div v-if="!isUpload" class="step1_before_upload">
                 <div class="loading-icon">
-                  <i class="el-icon-camera-solid" @click="imgCapDialogVisible = true"></i>
+                  <el-icon class="el-icon-camera-solid" @click="imgCapDialogVisible = true"><camera/></el-icon>
                 </div>
                 <p>未检测到图像上传，请先在 <b>左侧</b> 上传图像</p>
                 <p>或点击
-                  <i class="el-icon-camera-solid"></i>
+                  <el-icon class="el-icon-camera-solid"><camera/></el-icon>
                   进行拍照
                 </p>
               </div>
@@ -58,12 +58,13 @@
             </el-card>
             <el-card v-if="active === 2" shadow="always" class="card">
               <div slot="header" class="clearfix">
-                <span>输入健身动作类型</span>
+                <span class="upload-title">输入健身动作类型</span>
               </div>
               <el-form class="type-form">
-                <el-form-item label="健身动作类型:" label-width="180px">
+                <el-form-item  label-width="190px" >
                   <el-input v-model="screenshotsCurrent.exerciseName"
-                    style="width: 300px; font-size: 20px; color: #000 !important; font-weight: bold; margin-top: 5px "></el-input>
+                    style="width: 300px; font-size: 20px; color: #000 !important; font-weight: bold; margin-top: 5px">
+                  </el-input>
                 </el-form-item>
               </el-form>
               <div class="img-tip-step2">
@@ -74,7 +75,7 @@
             </el-card>
             <el-card v-if="active === 3" shadow="always" class="card step3">
               <div slot="header" class="clearfix">
-                <span>AI分析</span>
+                <span class="upload-title">AI分析</span>
               </div>
               <div class="step3">
                 <div class="img-info-item">
@@ -106,7 +107,7 @@
             <span class="actions">
               <!-- 放大 -->
               <span class="item">
-                <i class="el-icon-zoom-in" @click="beforeImgDialogVisible = true"></i>
+                <el-icon class="el-icon-zoom-in" @click="zoomin"><ZoomIn/></el-icon>
               </span>
             </span>
           </div>
@@ -121,7 +122,7 @@
             <div class="before-success-tracking" v-if="!successAnalyze">
               <div class="tracking" v-if="analysisStatue === 1">
                 <div>
-                  <el-progress class="progress" type="circle" :percentage="analysisPercentage" />
+                  <el-progress class="progress" type="circle" :percentage="analysisPercentage" :width="300" />
                 </div>
                 <el-button type="primary" round class="cancel-btn" @click="cancelTrack">取消分析</el-button>
               </div>
@@ -145,10 +146,10 @@
 
     </div>
     <!-- 图片显示对话框 -->
-    <el-dialog :visible.sync="beforeImgDialogVisible" :modal-append-to-body="false" top="5vh" :show-close="false"
-      class="dialog">
-      <img :src="screenShotUrl" alt="" class="dialog-img" />
+    <el-dialog v-model="beforeImgDialogVisible" :modal-append-to-body="false" top="5vh" :show-close="false" class="dialog">
+      <img :src="screenShotUrl" alt="" class="dialog-img"/>
     </el-dialog>
+
     <!--    拍照对话框-->
     <div v-show="imgCapDialogVisible" class="img-cap-dialog">
       <div class="img-cap-dialog-content">
@@ -178,9 +179,20 @@
         </div>
       </div>
     </div>
-    <el-input v-model="searchQuery" placeholder="输入健身动作名称" class="search-input" clearable prefix-icon="el-icon-search"
-      suffix-icon="el-icon-close">
+
+    <!-- 搜索栏 -->
+    <el-input v-model="searchQuery" placeholder="输入健身动作名称" class="search-input" clearable>
+      <!-- 前缀图标 -->
+      <template #prefix>
+        <el-icon><Search /></el-icon>
+      </template>
+
+      <!-- 后缀图标 -->
+      <template #suffix>
+        <el-icon @click="clearSearch"><Close /></el-icon>
+      </template>
     </el-input>
+
 
     <!-- 显示上传的图片 -->
     <div v-if="uploadedScreenshots.length" class="screenshot-gallery">
@@ -189,8 +201,10 @@
           <el-card @click.native="openDialog(screenshot)"
             :body-style="{ padding: '10px', position: 'relative', height: '400px' }">
             <!-- 删除按钮 -->
-            <el-button @click.stop="deleteScreenshot(screenshot)" type="danger" icon="el-icon-delete" circle
-              style="position: absolute; bottom: 10px; right: 10px;z-index: 10"></el-button>
+            <el-button @click.stop="deleteScreenshot(screenshot)" type="danger"  circle
+              style="position: absolute; bottom: 10px; right: 10px;z-index: 10">
+              <el-icon class="el-icon-delete"><Delete/></el-icon>
+            </el-button>
             <img :src="screenshot.screenshotUrl" alt="Screenshot" class="uploaded-image"
               style="max-height: 380px;height:90%; object-fit: contain; display: block; margin-bottom: 20px;" />
             <div style="text-align: center;">{{ screenshot.exerciseName }}</div>
@@ -200,7 +214,7 @@
     </div>
 
     <!-- 模态窗口展示详情 -->
-    <el-dialog :visible.sync="dialogVisible" width="60%">
+    <el-dialog v-model="dialogVisible" width="60%">
       <div class="title-container">
         <div class="markdown-content">
           <strong>运动分析详情</strong>
@@ -226,12 +240,13 @@
 </template>
 
 <script>
+import ElementPlus from 'element-plus'
 import axios from 'axios'
 // import marked from 'marked'
 // eslint-disable-next-line no-unused-vars
 import MarkdownIt from 'markdown-it'
 const md = new MarkdownIt()
-// import { Upload,ZoomIn,Delete,Camera,Picture,Clock  } from '@element-plus/icons-vue'
+import { Upload,ZoomIn,Delete,Camera,Picture,Clock  } from '@element-plus/icons-vue'
 
 export default {
   name: 'FitnessGuide',
@@ -315,7 +330,19 @@ export default {
       this.$store.dispatch('delReqUrl', true)
     }
   },
+  components: {
+    Upload,
+    ZoomIn,
+    Delete,
+    Camera,
+    Picture,
+    Clock,
+  },
   methods: {
+    zoomin() {
+    console.log('Icon clicked');
+    this.beforeImgDialogVisible = true;
+  },
     // 图片缩略图
     imgPreview(file) {
       console.log('file is', file)
@@ -342,7 +369,7 @@ export default {
       this.$confirm('此操作将删除该图像, 是否继续?', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
-        type: 'warning'
+        type: 'warning',
       }).then(() => {
         this.screenShotUrl = ''
         this.isUpload = false
@@ -603,7 +630,7 @@ export default {
 </script>
 
 <style scoped>
-@import "../static/css/AIExercise.css";
+@import "./src/static/css/AIExercise.css";
 
 .title {
   font-size: 3vw;
@@ -614,10 +641,14 @@ export default {
   letter-spacing: 1vw;
 }
 
-
-.container {
-  /* background: url("../assets/boxing.png") no-repeat center; */
+.container  {
+  background: url("./src/assets/bg5.jpg") no-repeat center;
   background-size: 100% 100%;
+  margin-top: 5%;
+  margin-left: -13%;
+  width: 100%;
+
+
 }
 
 .img-cap {
@@ -734,13 +765,13 @@ export default {
 }
 
 .uploader-icon {
-  font-size: 48px;
+  font-size: 15px ;
   color: #8c8c8c;
 }
 
 .uploader-text {
-  margin-top: 10px;
-  font-size: 14px;
+  margin-top: 5px !important;
+  font-size: 45px !important;
   color: #8c8c8c;
 }
 
@@ -797,7 +828,7 @@ export default {
 }
 
 .markdown-content-container {
-  max-height: 300px;
+  max-height: 400px;
   /* 设置容器的最大高度 */
   overflow-y: auto;
   /* 启用垂直滚动条 */
@@ -857,7 +888,7 @@ export default {
 .search-input {
   width: 400px;
   height: 40px;
-  margin-left: 10%;
+  margin-left: -60%;
   border-radius: 20px;
   font-size: 20px;
   background-color: #929191;

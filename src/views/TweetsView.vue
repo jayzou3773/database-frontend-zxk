@@ -1,7 +1,8 @@
 <script setup>
 import Navigator from '../components/NavigationBar.vue'
-import { ref, h, onBeforeMount } from 'vue'
-import { onMounted, } from 'vue'
+import { ref, h } from 'vue'
+import { nextTick } from 'vue';
+import { onMounted, onBeforeMount } from 'vue'
 import axios from 'axios'
 import { ElNotification, ElMessageBox, ElMessage } from 'element-plus'
 import NotificationContent from '../components/NotificationContent.vue'
@@ -23,92 +24,51 @@ const form = ref({
     equipmentName: '',
     imgUrl: '',
     operationGuide: '',
-    briefIntr: ''
+    shortfIntr: ''
 })
 // 伪造的假数据
 const fakeData = [
-    { equipmentName: '1', imgUrl: '../assets/strength.png', shortIntr: '提高心肺耐力的最佳选择' },
-    { equipmentName: '单杠', imgUrl: '../assets/running.png', shortIntr: '锻炼上肢力量的经典器械' },
-    { equipmentName: '动感单车', imgUrl: '../assets/cycling.png', shortIntr: '高效的有氧运动工具' },
-    { equipmentName: '瑜伽垫', imgUrl: '../assets/swimming.png', shortIntr: '舒适的柔韧性训练基础' },
-    { equipmentName: '哑铃', imgUrl: '../assets/boxing.png', shortIntr: '力量训练的万能选择' },
-    { equipmentName: '绳索拉力器', imgUrl: '../assets/yoga.png', shortIntr: '灵活的全身肌肉训练工具' },
-    { equipmentName: '椭圆机', imgUrl: '../assets/climbing.png', shortIntr: '低冲击力的有氧运动神器' }
+    { equipmentName: '1', imgUrl: 'https://image-tongji-sse-db.oss-cn-shanghai.aliyuncs.com/%E5%8D%95%E8%BD%A6%E6%9C%BA.png', shortIntr: '提高心肺耐力的最佳选择' },
+    { equipmentName: '单杠', imgUrl: 'https://image-tongji-sse-db.oss-cn-shanghai.aliyuncs.com/%E5%8D%95%E8%BD%A6%E6%9C%BA.png', shortIntr: '锻炼上肢力量的经典器械' },
+    { equipmentName: '动感单车', imgUrl: 'https://image-tongji-sse-db.oss-cn-shanghai.aliyuncs.com/%E5%8D%95%E8%BD%A6%E6%9C%BA.png', shortIntr: '高效的有氧运动工具' },
+    { equipmentName: '瑜伽垫', imgUrl: 'https://image-tongji-sse-db.oss-cn-shanghai.aliyuncs.com/%E5%8D%95%E8%BD%A6%E6%9C%BA.png', shortIntr: '舒适的柔韧性训练基础' },
+    { equipmentName: '哑铃', imgUrl: 'https://image-tongji-sse-db.oss-cn-shanghai.aliyuncs.com/%E5%8D%95%E8%BD%A6%E6%9C%BA.png', shortIntr: '力量训练的万能选择' },
+    { equipmentName: '绳索拉力器', imgUrl: 'https://image-tongji-sse-db.oss-cn-shanghai.aliyuncs.com/%E5%8D%95%E8%BD%A6%E6%9C%BA.png', shortIntr: '灵活的全身肌肉训练工具' },
+    { equipmentName: '椭圆机', imgUrl: 'https://image-tongji-sse-db.oss-cn-shanghai.aliyuncs.com/%E5%8D%95%E8%BD%A6%E6%9C%BA.png', shortIntr: '低冲击力的有氧运动神器' }
 ]
-const equipmentList = ref(fakeData) // 默认情况下先使用fakeData
+
+const equipmentList = ref([]) // 默认情况下先使用fakeData
+equipmentList.value = ref(fakeData)
 
 
-const fetchAllEquipmentGuide = async () => {
-    try {
-        const response = await axios.get('/api/AIGuide/GetALLEquipmentGuide')
-        equipmentList = response.data.guides.map(item => ({
-            equipmentName: item.equipmentName,
-            imgUrl: item.imgUrl, // 确保图片URL是完整的URL
-            shortIntr: item.briefIntr // 使用 briefIntr 作为简介
-        }))
-    } catch (error) {
-        equipmentList = fakeData
-        console.error('Failed to fetch equipment guide:', error)
-        console.log("result", equipmentList)
 
-    }
+function fetchAllEquipmentGuide() {
+    axios.get('http://localhost:5273/api/AIGuide/GetRandomEquipmentGuide')
+        .then(function (response) {
+            const guides = response.data.guides;
+            const tmp = guides.map(item => ({
+                equipmentName: item.equipmentName,
+                imgUrl: item.imgUrl,
+                shortIntr: item.briefIntr
+            }));
+            equipmentList.value = ref(tmp);
+        })
+        .catch(function (error) {
+            console.error('Failed to fetch equipment guide:', error);
+            equipmentList.value = ref([]); // Set an empty array or default data
+        });
 }
 
-onBeforeMount(() => {
-    fetchAllEquipmentGuide()
-    console.log("result", equipmentList)
+onMounted(() => {
+    fetchAllEquipmentGuide();
 })
-
-const handleInsertOrUpdate = async () => {
-    if (form.value.equipmentName === '') {
-        ElMessage.warning('器材名称不能为空')
-        return
-    }
-    try {
-        const response = await axios.put('/api/AIGuide/UpdateEquipmentGuide', form.value)
-        ElMessage.success(response.data.message)
-        fetchAllEquipmentGuide() // 更新后重新获取列表
-    } catch (error) {
-        try {
-            const response = await axios.post('/api/AIGuide/InsertEquipmentGuide', form.value)
-            ElMessage.success(response.data.message)
-            fetchAllEquipmentGuide() // 插入后重新获取列表
-        } catch (error) {
-            console.error('操作失败:', error)
-            ElMessage.error('操作失败')
-        }
-    }
-}
-
-const handleDelete = async () => {
-    if (form.value.equipmentName === '') {
-        ElMessage.warning('器材名称不能为空')
-        return
-    }
-    ElMessageBox.confirm(`确认删除 ${form.value.equipmentName} 吗？`, '删除确认', {
-        confirmButtonText: '删除',
-        cancelButtonText: '取消',
-        type: 'warning',
-    }).then(async () => {
-        try {
-            const response = await axios.post('/api/AIGuide/DeleteEquipmentGuide', { equipmentName: form.value.equipmentName })
-            ElMessage.success(response.data.message)
-            fetchAllEquipmentGuide() // 删除后重新获取列表
-        } catch (error) {
-            console.error('删除失败:', error)
-            ElMessage.error('删除失败')
-        }
-    }).catch(() => {
-        ElMessage.info('已取消删除')
-    })
-}
 
 const showMask = ref(false)
 
-const showNotification = () => {
+function showNotification(equipmentList) {
     showMask.value = true; // 显示遮罩层
     document.documentElement.classList.add('blur-active'); // 添加 blur-active 类
-
+    //console.log(equipmentList.value[0])
     // 使用 Vue 组件作为通知内容
     ElNotification({
         title: equipmentList.value[0].equipmentName,
@@ -124,7 +84,7 @@ const showNotification = () => {
     })
 }
 
-const showNotification2 = () => {
+function showNotification2(equipmentList) {
     showMask.value = true; // 显示遮罩层
     document.documentElement.classList.add('blur-active'); // 添加 blur-active 类
 
@@ -143,7 +103,7 @@ const showNotification2 = () => {
     })
 }
 
-const showNotification3 = () => {
+function showNotification3(equipmentList) {
     showMask.value = true; // 显示遮罩层
     document.documentElement.classList.add('blur-active'); // 添加 blur-active 类
 
@@ -162,7 +122,7 @@ const showNotification3 = () => {
     })
 }
 
-const showNotification4 = () => {
+function showNotification4(equipmentList) {
     showMask.value = true; // 显示遮罩层
     document.documentElement.classList.add('blur-active'); // 添加 blur-active 类
 
@@ -181,7 +141,7 @@ const showNotification4 = () => {
     })
 }
 
-const showNotification5 = () => {
+function showNotification5(equipmentList) {
     showMask.value = true; // 显示遮罩层
     document.documentElement.classList.add('blur-active'); // 添加 blur-active 类
 
@@ -200,7 +160,7 @@ const showNotification5 = () => {
     })
 }
 
-const showNotification6 = () => {
+function showNotification6(equipmentList) {
     showMask.value = true; // 显示遮罩层
     document.documentElement.classList.add('blur-active'); // 添加 blur-active 类
 
@@ -219,7 +179,7 @@ const showNotification6 = () => {
     })
 }
 
-const showNotification7 = () => {
+function showNotification7(equipmentList) {
     showMask.value = true; // 显示遮罩层
     document.documentElement.classList.add('blur-active'); // 添加 blur-active 类
 
@@ -248,27 +208,6 @@ function openInNewTab(url) {
     <Navigator />
     <el-backtop :right="50" :bottom="50" />
 
-    <div class="management-container">
-        <el-form :model="form" ref="formRef" label-width="120px">
-            <el-form-item label="器材名称">
-                <el-input v-model="form.equipmentName" placeholder="请输入器材名称"></el-input>
-            </el-form-item>
-            <el-form-item label="图片URL">
-                <el-input v-model="form.imgUrl" placeholder="请输入图片URL"></el-input>
-            </el-form-item>
-            <el-form-item label="操作指南">
-                <el-input v-model="form.operationGuide" type="textarea" placeholder="请输入操作指南"></el-input>
-            </el-form-item>
-            <el-form-item label="简介">
-                <el-input v-model="form.briefIntr" type="textarea" placeholder="请输入简介"></el-input>
-            </el-form-item>
-            <el-form-item>
-                <el-button type="primary" @click="handleInsertOrUpdate">插入/更新</el-button>
-                <el-button type="danger" @click="handleDelete">删除</el-button>
-            </el-form-item>
-        </el-form>
-    </div>
-
     <div class="carousel-container-top">
         <el-carousel indicator-position="outside">
             <el-carousel-item v-for="(item, index) in items" :key="index">
@@ -278,99 +217,107 @@ function openInNewTab(url) {
     </div>
     <div v-if="showMask" class="mask"></div>
     <div class="card_1">
-        <el-card class="custom-card" style="max-width: 1000px; flex: 65;" shadow="hover" @click="showNotification">
-            <img :src="equipmentList[0].imgUrl" class="hover-zoom"
+        <el-card class="custom-card" style="max-width: 1000px; flex: 65;" shadow="hover"
+            @click="showNotification(equipmentList)">
+            <img :src="equipmentList.value[0].imgUrl" class="hover-zoom"
                 style="width: 100%; height: 300px; object-fit: cover;" />
             <div class="footer-content" style="background-color: #ffffff; text-align: left;">
                 <br>
-                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px;">{{
-        equipmentList[0].equipmentName }}</p><br>
-                <p style="font-size: 16px; margin-left: 25px; margin-right: 25px;">
-                    {{
-        equipmentList[0].shortIntr }}
+                <p style="font-size: 30px; margin-left: 25px; margin-right: 25px; font-weight: bold ;">
+                    {{ equipmentList.value[0].equipmentName }}
+                </p><br>
+                <p style="font-size: 20px; margin-left: 25px; margin-right: 25px;">
+                    {{ equipmentList.value[0].shortIntr }}
                 </p><br><br><br>
             </div>
         </el-card>
-        <el-card class="custom-card" style="max-width: 1000px; flex: 35;" shadow="hover" @click="showNotification2">
-            <img :src="equipmentList[1].imgUrl" class="hover-zoom"
+        <el-card class="custom-card" style="max-width: 1000px; flex: 35;" shadow="hover"
+            @click="showNotification2(equipmentList)">
+            <img :src="equipmentList.value[1].imgUrl" class="hover-zoom"
                 style="width: 100%; height: 200px; object-fit: cover;" />
             <div class="footer-content" style="background-color: #33aee3; text-align: left;">
                 <br>
-                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px; color: white;">{{
-        equipmentList[1].equipmentName }}</p><br>
-                <p style="font-size: 16px; margin-left: 25px; margin-right: 25px; color: white;">
-                    {{
-        equipmentList[1].shortIntr }}
+                <p style="font-size: 30px; margin-left: 25px; margin-right: 25px; color: white; font-weight: bold ;">
+                    {{ equipmentList.value[1].equipmentName }}
+                </p><br>
+                <p style="font-size: 20px; margin-left: 25px; margin-right: 25px; color: white;">
+                    {{ equipmentList.value[1].shortIntr }}
                 </p><br><br><br><br><br><br>
             </div>
         </el-card>
     </div>
     <div class="card_2">
-        <el-card class="custom-card" style="max-width: 1000px; flex: 32;" shadow="hover" @click="showNotification3">
-            <img :src="equipmentList[2].imgUrl" class="hover-zoom"
+        <el-card class="custom-card" style="max-width: 1000px; flex: 32;" shadow="hover"
+            @click="showNotification3(equipmentList)">
+            <img :src="equipmentList.value[2].imgUrl" class="hover-zoom"
                 style="width: 100%; height: 250px; object-fit: cover;" />
             <div class="footer-content" style="background-color: #3453dd; text-align: left;">
                 <br>
-                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px; color: white;">{{
-        equipmentList[2].equipmentName }}</p><br>
-                <p style="font-size: 16px; margin-left: 25px; margin-right: 25px; color: white;">
-                    {{
-        equipmentList[2].shortIntr }}
+                <p style="font-size: 30px; margin-left: 25px; margin-right: 25px; color: white; font-weight: bold ;">
+                    {{ equipmentList.value[2].equipmentName }}
+                </p><br>
+                <p style="font-size: 20px; margin-left: 25px; margin-right: 25px; color: white;">
+                    {{ equipmentList.value[2].shortIntr }}
                 </p><br><br><br><br><br><br><br>
             </div>
         </el-card>
-        <el-card class="custom-card" style="max-width: 1000px; flex: 32;" shadow="hover" @click="showNotification4">
-            <img :src="equipmentList[3].imgUrl" class="hover-zoom"
+        <el-card class="custom-card" style="max-width: 1000px; flex: 32;" shadow="hover"
+            @click="showNotification4(equipmentList)">
+            <img :src="equipmentList.value[3].imgUrl" class="hover-zoom"
                 style="width: 100%; height: 250px; object-fit: cover;" />
             <div class="footer-content" style="background-color: #ffffff; text-align: left;">
                 <br>
-                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px;">{{
-        equipmentList[3].equipmentName }}</p><br>
-                <p style="font-size: 16px; margin-left: 25px; margin-right: 25px;">
-                    {{
-        equipmentList[3].shortIntr }}
+                <p style="font-size: 30px; margin-left: 25px; margin-right: 25px; font-weight: bold ;">
+                    {{ equipmentList.value[3].equipmentName }}
+                </p><br>
+                <p style="font-size: 20px; margin-left: 25px; margin-right: 25px;">
+                    {{ equipmentList.value[3].shortIntr }}
                 </p><br><br><br><br><br><br><br>
             </div>
         </el-card>
-        <el-card class="custom-card" style="max-width: 1000px; flex: 35;" shadow="hover" @click="showNotification5">
-            <img :src="equipmentList[4].imgUrl" class="hover-zoom"
+        <el-card class="custom-card" style="max-width: 1000px; flex: 35;" shadow="hover"
+            @click="showNotification5(equipmentList)">
+            <img :src="equipmentList.value[4].imgUrl" class="hover-zoom"
                 style="width: 100%; height: 250px; object-fit: cover;" />
             <div class="footer-content" style="background-color: #ededed; text-align: left;">
                 <br>
-                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px; color: rgb(0, 0, 0);">{{
-        equipmentList[4].equipmentName }}</p>
+                <p
+                    style="font-size: 30px; margin-left: 25px; margin-right: 25px; color: rgb(0, 0, 0); font-weight: bold ;">
+                    {{ equipmentList.value[4].equipmentName }}
+                </p>
                 <br>
-                <p style="font-size: 16px; margin-left: 25px; margin-right: 25px; color: rgb(0, 0, 0);">
-                    {{
-        equipmentList[4].shortIntr }}
+                <p style="font-size: 20px; margin-left: 25px; margin-right: 25px; color: rgb(0, 0, 0);">
+                    {{ equipmentList.value[4].shortIntr }}
                 </p><br><br><br><br><br><br><br>
             </div>
         </el-card>
     </div>
     <div class="card_3">
-        <el-card class="custom-card" style="max-width: 1000px; flex: 65;" shadow="hover" @click="showNotification6">
-            <img :src="equipmentList[5].imgUrl" class="hover-zoom"
+        <el-card class="custom-card" style="max-width: 1000px; flex: 65;" shadow="hover"
+            @click="showNotification6(equipmentList)">
+            <img :src="equipmentList.value[5].imgUrl" class="hover-zoom"
                 style="width: 100%; height: 300px; object-fit: cover;" />
             <div class="footer-content" style="background-color: #ffffff; text-align: left;">
                 <br>
-                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px;">{{
-        equipmentList[5].equipmentName }}</p><br>
-                <p style="font-size: 16px; margin-left: 25px; margin-right: 25px;">
-                    {{
-        equipmentList[5].shortIntr }}
+                <p style="font-size: 30px; margin-left: 25px; margin-right: 25px; font-weight: bold ;">
+                    {{ equipmentList.value[5].equipmentName }}
+                </p><br>
+                <p style="font-size: 20px; margin-left: 25px; margin-right: 25px;">
+                    {{ equipmentList.value[5].shortIntr }}
                 </p><br><br><br>
             </div>
         </el-card>
-        <el-card class="custom-card" style="max-width: 1000px; flex: 35;" shadow="hover" @click="showNotification7">
-            <img :src="equipmentList[6].imgUrl" class="hover-zoom"
+        <el-card class="custom-card" style="max-width: 1000px; flex: 35;" shadow="hover"
+            @click="showNotification7(equipmentList)">
+            <img :src="equipmentList.value[6].imgUrl" class="hover-zoom"
                 style="width: 100%; height: 250px; object-fit: cover;" />
             <div class="footer-content" style="background-color: #3453dd; text-align: left;">
                 <br>
-                <p style="font-size: 24px; margin-left: 25px; margin-right: 25px; color: white;">{{
-                    equipmentList[6].equipmentName }}</p><br>
-                <p style="font-size: 16px; margin-left: 25px; margin-right: 25px; color: white;">
-                    {{
-                    equipmentList[6].shortIntr }}
+                <p style="font-size: 30px; margin-left: 25px; margin-right: 25px; color: white; font-weight: bold ;">
+                    {{ equipmentList.value[6].equipmentName }}
+                </p><br>
+                <p style="font-size: 20px; margin-left: 25px; margin-right: 25px; color: white;">
+                    {{ equipmentList.value[6].shortIntr }}
                 </p><br><br><br><br><br><br>
             </div>
         </el-card>
@@ -382,7 +329,7 @@ function openInNewTab(url) {
     margin-top: 105px;
     width: 80vw;
     height: 600px;
-    margin-left: -8%;
+    margin-left: -10%;
     margin-right: auto;
     position: relative;
     z-index: 1;

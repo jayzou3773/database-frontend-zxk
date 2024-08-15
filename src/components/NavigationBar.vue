@@ -34,12 +34,12 @@
                         健身课程
                     </router-link>
                 </label>
-                <label for="star" class="star" @click="delayedNavigation('/camera')">
+                <label for="star" class="star" @click="delayedNavigation('/admin')">
                     <router-link to="/">
                         <el-icon>
                             <Star />
                         </el-icon>
-                        AI爱健身
+                        管理员
                     </router-link>
                 </label>
                 <label for="user" class="user" @click="delayedNavigation('/data')">
